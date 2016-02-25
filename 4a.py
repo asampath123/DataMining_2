@@ -1,71 +1,8 @@
 import numpy
 import math
-import statistics
 from numpy.core.records import record
 
-class Node:
 
-    def __init__(self, value, value1):
-        self.left = None
-        self.data = value
-        self.label = value1
-        self.right = None
-        self.dict = {}
-
-class Tree:
-
-    def createNode(self, data, label):
-
-        return Node(data, label)
-
-    def insert(self, node , data, label):
-
-        if node is None:
-            return self.createNode(data, label)
-        # if data is smaller than parent , insert it into left side
-        for d in data:
-            if d < node.data:
-                node.left = self.insert(node.left, data, label)
-            elif d > node.data:
-                node.right = self.insert(node.right, data, label)
-
-        return node
-
-
-    def search(self, node, data):
-
-        if node is None or node.data == data:
-            return node
-
-        if node.data < data:
-            return self.search(node.right, data)
-        else:
-            return self.search(node.left, data)
-
-
-
-    def deleteNode(self,node,data):
-
-        if node is None:
-            return None
-
-        if data < node.data:
-            node.left = self.deleteNode(node.left, data)
-        elif data > node.data:
-            node.right = self.deleteNode(node.right, data)
-        else:
-            if node.left is None and node.right is None:
-                del node
-            if node.left == None:
-                temp = node.right
-                del node
-                return  temp
-            elif node.right == None:
-                temp = node.left
-                del node
-                return temp
-
-        return node
 
     
     
@@ -84,14 +21,11 @@ def extractData(fileName):
                 i+=1
             else:
                 values=everyLine.strip().split(",")
-                #values=list(map(float, values))
-                #values = map(int, values)
                 traindata.append(dict(zip(attributeTitle,values)))
             
     #print(attributeTitle)
     #print(classAttribute)
     #print(traindata) 
-    
     return traindata,attributeTitle,classAttribute
 
 
@@ -161,7 +95,7 @@ def informationGain(traindata,attributeTitle,classAttribute):
 def pickBest(traindata,attributeTitle,classAttribute):
     highestGain=0.0
     bestAttribute=None
-    #print(attributeTitle)
+    print(attributeTitle)
     for item in attributeTitle:
         #print("attr is",item)
         gain=informationGain(traindata,item,classAttribute)
@@ -205,8 +139,7 @@ def get_values(data, attr):
     #for record1 in data:
         #print(record1)
 #     print([record[attr] for record in data])
-    unique_lst = ([record[attr] for record in data])
-    unique_lst=list(map(float, unique_lst))
+    unique_lst = uniqueFunction([record[attr] for record in data])
     return unique_lst
         
 def get_examples(data, attr, value):
@@ -229,60 +162,15 @@ def get_examples(data, attr, value):
             rtn_lst.extend(get_examples(data, attr, value))
             return rtn_lst    
 
-def get_lesser(data, attr, value):
-    """
-    Returns a list of all the records in <data> with the value of <attr>
-    matching the given value.
-    """
-    data = data[:]
-    rtn_lst = []
-        
-    if not data:
-        return rtn_lst
-    else:
-        record = data.pop()
-        #print("record is",record)
-        if float(record[attr]) < value:
-            #print("value of float(record[attr]) is",float(record[attr]))
-            rtn_lst.append(record)
-            rtn_lst.extend(get_lesser(data, attr, value))
-            return rtn_lst
-        else:
-            rtn_lst.extend(get_lesser(data, attr, value))
-            return rtn_lst
-        
-def get_greater(data, attr, value):
-    """
-    Returns a list of all the records in <data> with the value of <attr>
-    matching the given value.
-    """
-    data = data[:]
-    rtn_lst = []
-        
-    if not data:
-        return rtn_lst
-    else:
-        record = data.pop()
-        if float(record[attr]) >= value:
-            rtn_lst.append(record)
-            rtn_lst.extend(get_greater(data, attr, value))
-            return rtn_lst
-        else:
-            rtn_lst.extend(get_greater(data, attr, value))
-            return rtn_lst        
-
 
 
 def buildTree(traindata,attributeTitle,classAttribute):
     #print("buildTree")
     classValues=[]
-    unique_lst = []
-    list1=[]
-    list2=[]
+    
     for item in traindata:
         classValue = item[classAttribute]
         classValues.append(classValue)
-    print("frequentClassified(classValues)",frequentClassified(classValues))    
     #print(classValues)
     #print(frequentClassified(classValues))
     
@@ -294,41 +182,21 @@ def buildTree(traindata,attributeTitle,classAttribute):
         return classValues[0]
     else:
         bestAtrribute = pickBest(traindata,attributeTitle,classAttribute)
-        
-        unique_lst = ([record[bestAtrribute] for record in traindata])
-        #print(unique_lst)
-        unique_lst=list(map(float, unique_lst))
-        #print(unique_lst)
-        medianVal=statistics.median(unique_lst)
-        print("median is",medianVal)
-        
+        #print("build tree best",bestAtrribute)
+    bestAttributeList.append(bestAtrribute) 
+    print("bestAttributeList is",bestAttributeList)
+    tree = {bestAtrribute:{}}
+    #print(tree)    
     
-        list1=get_lesser(traindata, bestAtrribute, medianVal)
-        list2=get_greater(traindata, bestAtrribute, medianVal)   
-        #print(list1)
-        #print(list2) 
-        
-        tree=Tree()
-        node=Node(medianVal,bestAtrribute)
-        #subtree = buildTree(get_examples(traindata, bestAtrribute, val),[attr for attr in attributeTitle if attr != bestAttributeList],classAttribute)
-        #tree.insert(node, unique_lst, bestAtrribute)
-    
-    #subtree=buildTree(traindata,attributeTitle,classAttribute)
-    #for attr in attributeTitle:
-    
-    
-    
-    
+    for val in get_values(traindata, bestAtrribute):
             # Create a subtree for the current value under the "best" field
-        
+            subtree = buildTree(get_examples(traindata, bestAtrribute, val),[attr for attr in attributeTitle if attr != bestAttributeList],classAttribute)
             #print(subtree)
             # Add the new subtree to the empty dictionary object in our new
             # tree/node we just created.
-        
+            tree[bestAtrribute][val] = subtree
 
     return tree
-    #print("done")
-    #return tree
         
          
     #incomplete            
@@ -368,7 +236,7 @@ if __name__ == "__main__":
     traindata,attributeTitle,classAttribute=extractData("D://Spring 2016//DM//iris//iris1.data.txt")
     bestAttributeList=[]
     tree=buildTree(traindata,attributeTitle,classAttribute)
-    print(tree)
+    
     
     
     
