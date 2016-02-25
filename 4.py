@@ -1,4 +1,5 @@
 import numpy
+import random
 import math
 import statistics
 from numpy.core.records import record
@@ -12,62 +13,6 @@ class Node:
         self.right = None
         self.dict = {}
 
-class Tree:
-
-    def createNode(self, data, label):
-
-        return Node(data, label)
-
-    def insert(self, node , data, label):
-
-        if node is None:
-            return self.createNode(data, label)
-        # if data is smaller than parent , insert it into left side
-        for d in data:
-            if d < node.data:
-                node.left = self.insert(node.left, data, label)
-            elif d > node.data:
-                node.right = self.insert(node.right, data, label)
-
-        return node
-
-
-    def search(self, node, data):
-
-        if node is None or node.data == data:
-            return node
-
-        if node.data < data:
-            return self.search(node.right, data)
-        else:
-            return self.search(node.left, data)
-
-
-
-    def deleteNode(self,node,data):
-
-        if node is None:
-            return None
-
-        if data < node.data:
-            node.left = self.deleteNode(node.left, data)
-        elif data > node.data:
-            node.right = self.deleteNode(node.right, data)
-        else:
-            if node.left is None and node.right is None:
-                del node
-            if node.left == None:
-                temp = node.right
-                del node
-                return  temp
-            elif node.right == None:
-                temp = node.left
-                del node
-                return temp
-
-        return node
-
-    
     
 def extractData(fileName):
     print("extracting file")
@@ -80,7 +25,9 @@ def extractData(fileName):
         if not everyLine.strip() =='':
             if i==0:
                 attributeTitle = everyLine.strip().split(",")
-                classAttribute = attributeTitle[-1]
+                classAttribute = attributeTitle[-1] # for data with class as the last column
+                #classAttribute = attributeTitle[0] #for data with class at column 1, wine data
+                print(classAttribute)
                 i+=1
             else:
                 values=everyLine.strip().split(",")
@@ -93,6 +40,7 @@ def extractData(fileName):
     #print(traindata) 
     
     return traindata,attributeTitle,classAttribute
+
 
 
 def frequentClassified(classValues):
@@ -173,8 +121,8 @@ def pickBest(traindata,attributeTitle,classAttribute):
             bestAttribute = item
     
     
-    print("best is",bestAttribute)
-    print("highest gain is",highestGain)            
+    #print("best is",bestAttribute)
+    #print("highest gain is",highestGain)            
     return bestAttribute    
 
 def uniqueFunction(lst):
@@ -209,26 +157,6 @@ def get_values(data, attr):
     unique_lst=list(map(float, unique_lst))
     return unique_lst
         
-def get_examples(data, attr, value):
-    """
-    Returns a list of all the records in <data> with the value of <attr>
-    matching the given value.
-    """
-    data = data[:]
-    rtn_lst = []
-        
-    if not data:
-        return rtn_lst
-    else:
-        record = data.pop()
-        if record[attr] == value:
-            rtn_lst.append(record)
-            rtn_lst.extend(get_examples(data, attr, value))
-            return rtn_lst
-        else:
-            rtn_lst.extend(get_examples(data, attr, value))
-            return rtn_lst    
-
 def get_lesser(data, attr, value):
     """
     Returns a list of all the records in <data> with the value of <attr>
@@ -282,16 +210,17 @@ def buildTree(traindata,attributeTitle,classAttribute):
     for item in traindata:
         classValue = item[classAttribute]
         classValues.append(classValue)
-    print("frequentClassified(classValues)",frequentClassified(classValues))    
+    #print("frequentClassified(classValues)",frequentClassified(classValues))    
     #print(classValues)
     #print(frequentClassified(classValues))
     
     
     if (len(attributeTitle) - 1) <= 0 or not traindata:
-        return frequentClassified(classValues)
+        freqClass = frequentClassified(classValues)
+        return Node(freqClass,classAttribute)
     
     elif len(classValues)== classValues.count(classValues[0]) :
-        return classValues[0]
+        return Node(classValues[0],classAttribute) 
     else:
         bestAtrribute = pickBest(traindata,attributeTitle,classAttribute)
         
@@ -300,7 +229,7 @@ def buildTree(traindata,attributeTitle,classAttribute):
         unique_lst=list(map(float, unique_lst))
         #print(unique_lst)
         medianVal=statistics.median(unique_lst)
-        print("median is",medianVal)
+        #print("median is",medianVal)
         
     
         list1=get_lesser(traindata, bestAtrribute, medianVal)
@@ -308,25 +237,13 @@ def buildTree(traindata,attributeTitle,classAttribute):
         #print(list1)
         #print(list2) 
         
-        tree=Tree()
-        node=Node(medianVal,bestAtrribute)
-        #subtree = buildTree(get_examples(traindata, bestAtrribute, val),[attr for attr in attributeTitle if attr != bestAttributeList],classAttribute)
-        #tree.insert(node, unique_lst, bestAtrribute)
-    
-    #subtree=buildTree(traindata,attributeTitle,classAttribute)
-    #for attr in attributeTitle:
-    
-    
-    
-    
-            # Create a subtree for the current value under the "best" field
+        k = [a for a in attributeTitle if a != bestAtrribute]
+        root = Node(medianVal, bestAtrribute)
+        root.dict = traindata
+        root.left = buildTree(list1, k, classAttribute)
+        root.right = buildTree(list2, k, classAttribute)
         
-            #print(subtree)
-            # Add the new subtree to the empty dictionary object in our new
-            # tree/node we just created.
-        
-
-    return tree
+    return root
     #print("done")
     #return tree
         
@@ -334,56 +251,52 @@ def buildTree(traindata,attributeTitle,classAttribute):
     #incomplete            
     #get the best attribute and build the subtree
                  
-def traverseDecisionTree(item, tree):
+
     
-    # If leaf, return
-    if type(tree) == type("string"):
-        return tree
-
-    #recurse till leaf
+def classifyTestData(node, record, classAttribute):
+    if node.left is None and node.right is None:
+        if node.data == record[classAttribute]:
+            return True
+        else:
+            return False
+    elif float(record[node.label]) > node.data:
+        return classifyTestData(node.right, record, classAttribute)
     else:
-        attribute= list(tree)[0]
-        #print("classification attr is",attr)
-        tempTree = tree[attribute][item[attribute]]
-        #print("t is",tree)
-        return traverseDecisionTree(item, tempTree)
+        return classifyTestData(node.left, record, classAttribute)    
 
-def print_tree(tree, str):
-    """
-    This function recursively crawls through the d-tree and prints it out in a
-    more readable format than a straight print of the Python dict object.  
-    """
-    if type(tree) == dict:
-        print ("%s%s" % (str, list(tree)[0]))
-        #for item in tree.values()[0].keys():
-        for item in list(tree.values())[0]:
-            print ("%s\t%s" % (str, item))
-            print_tree(list(tree.values())[0][item], str + "\t")
-    else:
-        print ("%s\t->\t%s" % (str, tree))    
-     
 if __name__ == "__main__":
     
     
-    traindata,attributeTitle,classAttribute=extractData("D://Spring 2016//DM//iris//iris1.data.txt")
+    data,attributeTitle,classAttribute=extractData("D://Spring 2016//DM//iris//iris1.data.txt")
     bestAttributeList=[]
-    tree=buildTree(traindata,attributeTitle,classAttribute)
-    print(tree)
-    
-    
-    
-    
-    
-    testdata,attributeTitle,classAttribute=extractData("D://Spring 2016//DM//iris//iris3.data.txt")
-    testclassification=[]
-    #for item in testdata:
-    #    testclassification.append(traverseDecisionTree(item, tree))
-    #classification = classify(tree, data)
-    #for item in testclassification:
-    #    print(item)
-    #print(tree)  
-    #print_tree(tree,"")    
-    
+    random.shuffle(data)
+
+    totalAccuracy=0.0
+    i=0
+    while i<10:
+        print("is i",i)
+        i=i+1
+        traindata = data[:11*i]
+        testdata = data[3*i:]
+        #print(traindata)
+        #print(testdata)
+        
+        
+        tree=buildTree(traindata,attributeTitle,classAttribute)
+        
+       
+        accurate=0
+        accuracy=0.0
+        #testdata,attributeTitle,classAttribute=extractData("D://Spring 2016//DM//iris//iris3.data.txt")
+        for item in testdata:
+            if classifyTestData(tree, item, classAttribute):
+                accurate = accurate+1
+        accuracy=(accurate * 100)/len(testdata)       
+        print ("Accuracy for the decision tree is", round(accuracy,2))
+        totalAccuracy=totalAccuracy+accuracy
+    print("totalAccuracy is",totalAccuracy/10)   
+            
+        
     
     
     
