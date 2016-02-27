@@ -131,8 +131,6 @@ def extractData(fileName):
     matplotlib.pyplot.scatter(list6, list12,color='c', marker='s', alpha=.4)
     matplotlib.pyplot.show()
     
-    
-    
-    
-     
-extractData("D://Spring 2016//DM//iris//wine.data.txt") 
+
+             
+extractData("wine1.data.txt") 

@@ -3,48 +3,37 @@ import matplotlib as mpl
 import matplotlib.pyplot as mplpy
 
 
-# # def calculateMeanAndStddev(sepalLength,sepalWidth,petalLength,petalWidth):
-#     print("Mean of Sepal Length is",round(numpy.mean(sepalLength),2))
-#     print("Std_Dev of Sepal Length is",round(numpy.std(sepalLength),2))
-#     
-#     print("Mean of Sepal Width is",round(numpy.mean(sepalWidth),2))
-#     print("Std_Dev of Sepal Width is",round(numpy.std(sepalWidth),2))
-#     
-#     print("Mean of Petal Length is",round(numpy.mean(petalLength),2))
-#     print("Std_Dev of Petal Length is",round(numpy.std(petalLength),2))
-#     
-#     print("Mean of Petal Width is",round(numpy.mean(petalWidth),2))
-#     print("Std_Dev of Petal Width is",round(numpy.std(petalWidth),2))
+
     
 def plot(data,name):
     
     
     figure = mplpy.figure(1, figsize=(9, 6))
     axes = figure.add_subplot(111)
-    bp=axes.boxplot(data,patch_artist=True)
+    boxplots=axes.boxplot(data,patch_artist=True)
     axes.set_xticklabels(['Iris-setosa', 'Iris-versicolor', 'Iris-virginica'])
 ## change outline color, fill color and linewidth of the boxes
-    for box in bp['boxes']:
+    for box in boxplots['boxes']:
         
-        # change outline color
+       
         box.set( color='#7570b3', linewidth=2)
         # change fill color
         box.set( facecolor = '#1b9e77' )
 
-        ## change color and linewidth of the whiskers
-    for whisker in bp['whiskers']:
+        
+    for whisker in boxplots['whiskers']:
         whisker.set(color='#7570b3', linewidth=2)
 
-        ## change color and linewidth of the caps
-    for cap in bp['caps']:
+        
+    for cap in boxplots['caps']:
         cap.set(color='#7570b3', linewidth=2)
 
-        ## change color and linewidth of the medians
-    for median in bp['medians']:
+        
+    for median in boxplots['medians']:
         median.set(color='#b2df8a', linewidth=2)
 
-        ## change the style of fliers and their fill
-    for flier in bp['fliers']:
+        
+    for flier in boxplots['fliers']:
         flier.set(marker='o', color='#e7298a', alpha=0.5)
     
     
@@ -88,13 +77,7 @@ def extractData(fileName):
                 sepalWidthVirginica.append(float(sepalWidths))
                 petalLengthVirginica.append(float(petalLengths))
                 petalWidthVirginica.append(float(petalWidths))
-#     print("Iris-setosa")
-#     calculateMeanAndStddev(sepalLengthSetosa,sepalWidthSetosa,petalLengthSetosa,petalWidthSetosa)
-#     print("Iris-versicolor")
-#     calculateMeanAndStddev(sepalLengthVersicolor,sepalWidthVersicolor,petalLengthVersicolor,petalWidthVersicolor)
-#     print("Iris-virginica")
-#     calculateMeanAndStddev(sepalLengthVirginica,sepalWidthVirginica,petalLengthVirginica,petalWidthVirginica)
-    #calculateMeanAndStddev(sepalLengthSetosa,sepalWidthSetosa,petalLengthSetosa,petalWidthSetosa)
+#     
     sepalLengthBox=[sepalLengthSetosa,sepalLengthVersicolor,sepalLengthVirginica]
     sepalWidthBox=[sepalWidthSetosa,sepalWidthVersicolor,sepalWidthVirginica]
     petalLengthBox=[petalLengthSetosa,petalLengthVersicolor,petalLengthVirginica]

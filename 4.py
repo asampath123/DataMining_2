@@ -3,19 +3,24 @@ import random
 import math
 import statistics
 from numpy.core.records import record
+from sklearn.cross_validation import KFold
 
-class Node:
 
-    def __init__(self, value, value1):
-        self.left = None
-        self.data = value
-        self.label = value1
-        self.right = None
+# class TreeNode to have values and pointer for each node, the tree is built on this basic data stricture
+class TreeNode:
+
+    def __init__(self, data, label):
         self.dict = {}
+        self.left = None
+        self.right = None
+        self.data = data
+        self.label = label
+        
+        
 
-    
+#to read file and categorize values,attributes and classes.     
 def extractData(fileName):
-    print("extracting file")
+    #print("extracting file")
     file = open(fileName, 'r')
     traindata=[]
     print ("Filepath is:" + file.name)
@@ -24,12 +29,18 @@ def extractData(fileName):
          
         if not everyLine.strip() =='':
             if i==0:
+                
                 attributeTitle = everyLine.strip().split(",")
-                classAttribute = attributeTitle[-1] # for data with class as the last column
+                
+                #pls change the class attribute assignment based on the position of your class variable
+                #refer to the cpmment post the line for changing. 
+                classAttribute = attributeTitle[-1] # for data with class as the last column , iris data
                 #classAttribute = attributeTitle[0] #for data with class at column 1, wine data
-                print(classAttribute)
+                
+                #print(classAttribute)
                 i+=1
             else:
+                
                 values=everyLine.strip().split(",")
                 #values=list(map(float, values))
                 #values = map(int, values)
@@ -37,12 +48,12 @@ def extractData(fileName):
             
     #print(attributeTitle)
     #print(classAttribute)
-    #print(traindata) 
+    #print(traindata)
     
     return traindata,attributeTitle,classAttribute
 
 
-
+#highest occurance of a particular class
 def frequentClassified(classValues):
     highestClass=None
     freqCount=0
@@ -52,10 +63,11 @@ def frequentClassified(classValues):
         if classValues.count(item) > freqCount:
             highestClass = item
             freqCount = classValues.count(item)
-            
-            
-    return highestClass        
+                
+        
+    return highestClass
 
+#to measure information gain,we need to calcualte entropy
 def entropy(subset,classAttribute):
     #print()
     frequencyList = {}
@@ -99,24 +111,52 @@ def informationGain(traindata,attributeTitle,classAttribute):
     #print("gain is",entropy(subset,classAttribute)-avgEntropy)
     #print("avgEntropy",avgEntropy)
     #print("entropy",entropy(traindata,classAttribute))
-    return (entropy(traindata,classAttribute)-avgEntropy)    
+    return (entropy(traindata,classAttribute)-avgEntropy)
+
+
+
+def calculateGini(traindata,attributeTitle,classAttribute):
+    frequencyList={}
+    gini=0.0
+   
+    for item in traindata:
+        #print(item)
+        #print(attributeTitle)
+        if(item[attributeTitle] in frequencyList):
+            frequencyList[item[attributeTitle]] = frequencyList[item[attributeTitle]]+1.0
+        else:
+            frequencyList[item[attributeTitle]] = 1.0
+    #print("flist is",frequencyList)        
+            
+    for freq in frequencyList.values(): 
+        gini += ((freq/len(traindata)) * (freq/len(traindata)))
+    giniCoeff=1-gini
+    return (giniCoeff)
     
     
             
     #print(frequencyList)        
     
 
-def pickBest(traindata,attributeTitle,classAttribute):
+# to pick the best attribute based on Gini or information gain. 
+def pickBest(traindata,attributeTitle,classAttribute,flag):
     highestGain=0.0
     bestAttribute=None
     #print(attributeTitle)
     for item in attributeTitle:
         #print("attr is",item)
-        gain=informationGain(traindata,item,classAttribute)
-        #print(gain)
-        if (gain >= highestGain and item != classAttribute):
+        
+        
+        if flag==1: #if Gain
+            val=informationGain(traindata,item,classAttribute)
+        else:     #if Gini
+            val=calculateGini(traindata,item,classAttribute)
+        
+        
+        
+        if (val >= highestGain and item != classAttribute):
             
-            highestGain = gain
+            highestGain = val
             #print("highest gain is",highestGain)
             bestAttribute = item
     
@@ -125,86 +165,59 @@ def pickBest(traindata,attributeTitle,classAttribute):
     #print("highest gain is",highestGain)            
     return bestAttribute    
 
-def uniqueFunction(lst):
-    """
-    Returns a list made up of the unique values found in lst.  i.e., it
-    removes the redundant values in lst.
-    """
-    lst = lst[:]
-    unique_lst = []
 
-    # Cycle through the list and add each value to the unique list only once.
-    for item in lst:
-        if unique_lst.count(item) <= 0:
-            unique_lst.append(item)
-            
-    # Return the list with all redundant values removed.
-    return unique_lst
-
-
-def get_values(data, attr):
-    """
-    Creates a list of values in the chosen attribut for each record in data,
-    prunes out all of the redundant values, and return the list.  
-    """
+#gets data lesser than value of attr from data        
+def dataLesserThanMedian(data, attr, value):
+    
     data = data[:]
-    #print("get values function")
-    #print(attr)
-    #for record1 in data:
-        #print(record1)
-#     print([record[attr] for record in data])
-    unique_lst = ([record[attr] for record in data])
-    unique_lst=list(map(float, unique_lst))
-    return unique_lst
-        
-def get_lesser(data, attr, value):
-    """
-    Returns a list of all the records in <data> with the value of <attr>
-    matching the given value.
-    """
-    data = data[:]
-    rtn_lst = []
+    dataList = []
         
     if not data:
-        return rtn_lst
+        return dataList
     else:
-        record = data.pop()
-        #print("record is",record)
+        record = data.pop() #each record at a time
+        
         if float(record[attr]) < value:
             #print("value of float(record[attr]) is",float(record[attr]))
-            rtn_lst.append(record)
-            rtn_lst.extend(get_lesser(data, attr, value))
-            return rtn_lst
-        else:
-            rtn_lst.extend(get_lesser(data, attr, value))
-            return rtn_lst
-        
-def get_greater(data, attr, value):
-    """
-    Returns a list of all the records in <data> with the value of <attr>
-    matching the given value.
-    """
+            dataList.append(record) #append all values greater than median
+            
+            #call next set of records
+            dataList.extend(dataLesserThanMedian(data, attr, value))
+            return dataList
+        else: 
+            #call next set of records
+            dataList.extend(dataLesserThanMedian(data, attr, value))
+            return dataList
+ 
+ 
+#gets data greater than value of attr from data        
+def dataGreaterThanMedian(data, attr, value):
+    
     data = data[:]
-    rtn_lst = []
+    dataList = []
         
     if not data:
-        return rtn_lst
+        return dataList
     else:
-        record = data.pop()
+        record = data.pop() #each record at a time
         if float(record[attr]) >= value:
-            rtn_lst.append(record)
-            rtn_lst.extend(get_greater(data, attr, value))
-            return rtn_lst
+            dataList.append(record) #append all values greater than median
+            
+            #call next set of records
+            dataList.extend(dataGreaterThanMedian(data, attr, value))
+            return dataList
         else:
-            rtn_lst.extend(get_greater(data, attr, value))
-            return rtn_lst        
+            #call next set of records
+            dataList.extend(dataGreaterThanMedian(data, attr, value))
+            return dataList        
 
 
 
-def buildTree(traindata,attributeTitle,classAttribute):
+def buildTree(traindata,attributeTitle,classAttribute,flag):
     #print("buildTree")
+    
     classValues=[]
-    unique_lst = []
+    best_attr_lst = []
     list1=[]
     list2=[]
     for item in traindata:
@@ -214,93 +227,140 @@ def buildTree(traindata,attributeTitle,classAttribute):
     #print(classValues)
     #print(frequentClassified(classValues))
     
-    
+    #base case 1: If trainData or attribute is empty
     if (len(attributeTitle) - 1) <= 0 or not traindata:
         freqClass = frequentClassified(classValues)
-        return Node(freqClass,classAttribute)
+        return TreeNode(freqClass,classAttribute)
     
+    #base casae 2: If all the classes of each row is same, return
     elif len(classValues)== classValues.count(classValues[0]) :
-        return Node(classValues[0],classAttribute) 
+        return TreeNode(classValues[0],classAttribute) 
+    
+    
+    
     else:
-        bestAtrribute = pickBest(traindata,attributeTitle,classAttribute)
+        # select the best attribute to build the tree and to select the root node
+        bestAtrribute = pickBest(traindata,attributeTitle,classAttribute,flag)
         
-        unique_lst = ([record[bestAtrribute] for record in traindata])
-        #print(unique_lst)
-        unique_lst=list(map(float, unique_lst))
-        #print(unique_lst)
-        medianVal=statistics.median(unique_lst)
+        #pick all the values of that best attribute and find its median, we divide the data on the median
+        best_attr_lst = ([record[bestAtrribute] for record in traindata])
+        best_attr_lst=list(map(float, best_attr_lst))
+        medianVal=statistics.median(best_attr_lst)
         #print("median is",medianVal)
         
-    
-        list1=get_lesser(traindata, bestAtrribute, medianVal)
-        list2=get_greater(traindata, bestAtrribute, medianVal)   
+        # get all records lesser than and greater than median of best attribute value.
+        list1=dataLesserThanMedian(traindata, bestAtrribute, medianVal)
+        list2=dataGreaterThanMedian(traindata, bestAtrribute, medianVal)   
         #print(list1)
         #print(list2) 
         
-        k = [a for a in attributeTitle if a != bestAtrribute]
-        root = Node(medianVal, bestAtrribute)
+        #build tree to left and right using the two lists. 
+        attTitle = [att for att in attributeTitle if att != bestAtrribute]
+        #set data and label for the node
+        root = TreeNode(medianVal, bestAtrribute)
         root.dict = traindata
-        root.left = buildTree(list1, k, classAttribute)
-        root.right = buildTree(list2, k, classAttribute)
+        
+        #insert left and right recursively 
+        root.left = buildTree(list1, attTitle, classAttribute,flag)
+        root.right = buildTree(list2, attTitle, classAttribute,flag)
         
     return root
-    #print("done")
-    #return tree
-        
-         
-    #incomplete            
-    #get the best attribute and build the subtree
-                 
-
-    
+ 
+ 
+# to test accuracy of the decision tree, pass test data though the tree.                    
 def classifyTestData(node, record, classAttribute):
+    
+    
+    #base case
     if node.left is None and node.right is None:
         if node.data == record[classAttribute]:
+            #accurate classification
             return True
         else:
+            #class not found.
             return False
+    
+    
     elif float(record[node.label]) > node.data:
+        #traverse right subtree
         return classifyTestData(node.right, record, classAttribute)
+    
+    
+    
     else:
-        return classifyTestData(node.left, record, classAttribute)    
+        #traverse left subtree
+        return classifyTestData(node.left, record, classAttribute)  
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      
 
 if __name__ == "__main__":
     
     
-    data,attributeTitle,classAttribute=extractData("D://Spring 2016//DM//iris//iris1.data.txt")
-    bestAttributeList=[]
+    # change name of the file you want to input 
+    fileName="iris.data.txt"
+    
+    # to extract data, pls change the class attribute assignment based on the position of your class variable
+    data,attributeTitle,classAttribute=extractData(fileName)
+    
+    
+    #10 fold validation, set values for train data and test data based on the lenght of dataset
+    folds=10
+    totalLength=int(len(data)/folds)
+    testLength=int(totalLength*0.1)
+    trainLength=totalLength-testLength
+    #print(testLength)
+    #print(trainLength)
+    
+    #shuffle the data before training and testing
     random.shuffle(data)
-
+    
+#     kf = KFold(20, n_folds=10)
+#     print(kf)
+#     for train_indices, test_indices in kf:
+#         print('Train: %s | test: %s' % (train_indices, test_indices))
+    
+    # for gini and gain
+    flag=eval(input("enter 1 for gain,2 for gini  : "))
     totalAccuracy=0.0
     i=0
     while i<10:
-        print("is i",i)
+        #print("is i",i)
         i=i+1
-        traindata = data[:11*i]
-        testdata = data[3*i:]
+        traindata = data[:trainLength*i]
+        testdata = data[testLength*i:]
         #print(traindata)
         #print(testdata)
+        random.shuffle(data)
+        
+        # this method builds the decision tree
+        tree=buildTree(traindata,attributeTitle,classAttribute,flag)
         
         
-        tree=buildTree(traindata,attributeTitle,classAttribute)
-        
-       
         accurate=0
         accuracy=0.0
         #testdata,attributeTitle,classAttribute=extractData("D://Spring 2016//DM//iris//iris3.data.txt")
         for item in testdata:
-            if classifyTestData(tree, item, classAttribute):
-                accurate = accurate+1
-        accuracy=(accurate * 100)/len(testdata)       
-        print ("Accuracy for the decision tree is", round(accuracy,2))
-        totalAccuracy=totalAccuracy+accuracy
-    print("totalAccuracy is",totalAccuracy/10)   
             
+            if classifyTestData(tree, item, classAttribute):
+                # if true, accurate classification, if not, decreases accuracy
+                accurate = accurate+1
+        accuracy=(accurate * 100)/len(testdata)
         
-    
-    
-    
-    
         
+        print ("Accuracy in",i," fold is",round(accuracy,2))
+        totalAccuracy=totalAccuracy+accuracy
+    print("totalAccuracy is",totalAccuracy/folds)
+    
+    
+    
+    
     
     

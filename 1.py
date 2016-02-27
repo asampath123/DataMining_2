@@ -36,4 +36,4 @@ def extractData(fileName):
     calculateMeanAndStddev(sepalLength,sepalWidth,petalLength,petalWidth)
      
 
-extractData("D://Spring 2016//DM//iris//iris.data.txt")   
+extractData("iris1.data.txt")   
